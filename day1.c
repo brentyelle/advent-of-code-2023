@@ -11,7 +11,7 @@ int findLastNumberChar(const char* str, int len);
 int findSubstringL(const char* lookstr, int looklen, const char* findstr, int findlen);
 int findSubstringR(const char* lookstr, int looklen, const char* findstr, int findlen);
 int findFirstNumberWord(const char* str, int len, int* firstnum);
-int findLastNumberWord(const char* str, int len, int* firstnum);
+int findLastNumberWord(const char* str, int len, int* lastnum);
 int findFirstNumber(const char* str, int len);
 int findLastNumber(const char* str, int len);
 
