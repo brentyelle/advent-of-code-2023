@@ -1,19 +1,17 @@
 #include <stdio.h>
 #include <string.h>
 #define BUFFERSIZE 1024
+#define NUM_NUMBERS 9
 
 typedef enum {false=0, true=1} bool;
 const char* const FILENAME = "day1_input.txt";
 
 bool isDigit(char c);
-int findFirstNumberChar(const char* str, int len);
-int findLastNumberChar(const char* str, int len);
-int findSubstringL(const char* lookstr, int looklen, const char* findstr, int findlen);
-int findSubstringR(const char* lookstr, int looklen, const char* findstr, int findlen);
-int findFirstNumberWord(const char* str, int len, int* firstnum);
-int findLastNumberWord(const char* str, int len, int* lastnum);
-int findFirstNumber(const char* str, int len);
-int findLastNumber(const char* str, int len);
+int findSubstring(const char* look_str, int look_len, const char* find_str, int find_len, bool leftmost);
+
+int findNumericChar(const char* input_str, int len, bool leftmost);
+int findNumericWord(const char* input_str, int len, int* found_number, bool leftmost);
+int findNumericEither(const char* input_str, int len, bool leftmost);
 
 int main(void) {
     char buffer[BUFFERSIZE] = "";   // buffer to hold string from file
@@ -32,8 +30,8 @@ int main(void) {
         if (buffer[0] == '#')
             continue;
 
-        int tens = findFirstNumber(buffer, strnlen(buffer, BUFFERSIZE));
-        int ones = findLastNumber(buffer, strnlen(buffer, BUFFERSIZE));
+        int tens = findNumericEither(buffer, strnlen(buffer, BUFFERSIZE), true);
+        int ones = findNumericEither(buffer, strnlen(buffer, BUFFERSIZE), false);
         // sum each "calibration value"
         total += 10*tens + ones;
     }
@@ -49,305 +47,160 @@ int main(void) {
     Returns TRUE if the given character is an ASCII digit.
 ---------------------------- */
 bool isDigit(char c) {
-    if (c >= '0' && c <= '9')
-        return true;
-    else
-        return false;
+    return (c >= '0' && c <= '9');
 }
 
 /* ----------------------------
-    Returns the address of the first numeric character in the string `str` (of length `len`).
+    Returns the address of the first numeric character in the string `input_str` (of length `len`).
     Returns -1 if there is no numeric character.
 ---------------------------- */
-int findFirstNumberChar(const char* str, int len) {
-    for (int i=0; i < len; i++) {
-        if (isDigit(str[i]))
-            return i;
-    }
-    return -1;
-}
 
-/* ----------------------------
-    Returns the address of the last numeric character in the string `str` (of length `len`).
-    Returns -1 if there is no numeric character.
----------------------------- */
-int findLastNumberChar(const char* str, int len) {
-    int lastindex = -1;
-    for (int i=0; i < len; i++) {
-        if (isDigit(str[i]))
-            lastindex = i;
-    }
-    return lastindex;
-}
-
-/* ----------------------------
-    If `lookstr` contains `findstr` as a substring, returns the index of the first character of the LAST instance of the substring in `lookstr`.
-    Returns -1 if `findstr` is not a substring of `lookstr`, or if `findstr` is empty.
----------------------------- */
-int findSubstringL(const char* lookstr, int looklen, const char* findstr, int findlen) {
-    bool is_match = false;
-
-    // can't search within empty strings
-    if (looklen < 1) {
-        fprintf(stderr, "Cannot look within a string a string of size %i", looklen);
-        return -1;
-    }
-
-    // can't search for the empty string
-    if (findlen < 1) {
-        fprintf(stderr, "Cannot search for a string of size %i", findlen);
-    }
-
-    // no hope of finding a substring that's longer
-    if (findlen > looklen) {
-        return -1;
-    }
-
-    // loop through entire LookIn string
-    for (int i=0; i<looklen; i++) {
-        // if one matching character is found
-        if (lookstr[i] == findstr[0]) {
-            // tentatively mark true match
-            is_match = true;
-            // check the subsequence characters
-            for (int j=1; j<findlen; j++) {
-                // if this would cause us to go beyond the lookstr's end, there's no hope for a match
-                if (i+j >= looklen) {
-                    is_match = false;
-                    break;
-                }
-                // otherwise, we need to match ALL subsequent characters in findstr
-                is_match = is_match && (lookstr[i+j] == findstr[j]);
-            }
-            // if we've reached here with is_match true, then we did find a match: return the index of the first character that matched
-            if (is_match)
+int findNumericChar(const char* input_str, int len, bool leftmost) {
+    int return_index = -1;
+    
+    if (leftmost) {
+        for (int i=0; i<len; i++) {
+            if (isDigit(input_str[i]))
+                return i;
+        }
+    } else {
+        for (int i=len-1; i>=0; i--) {
+            if (isDigit(input_str[i]))
                 return i;
         }
     }
-    // if we've reached here, then we never found any positive matches
+
     return -1;
 }
 
 /* ----------------------------
-    If `lookstr` contains `findstr` as a substring, returns the index of the first character of the LAST instance of the substring in `lookstr`.
-    Returns -1 if `findstr` is not a substring of `lookstr`, or if `findstr` is empty.
+    If `lookstr` contains `find_str` as a substring, returns the index of the first character of the LEFTMOST/RIGHTMOST (boolean-controlled) instance of the substring in `lookstr`.
+    Returns -1 if `find_str` is not a substring of `look_str`, or if `find_str` is empty.
 ---------------------------- */
-int findSubstringR(const char* lookstr, int looklen, const char* findstr, int findlen) {
-    bool is_match = false;
 
+int findSubstring(const char* look_str, int look_len, const char* find_str, int find_len, bool leftmost) {
+    bool is_match = false;
     // can't search within empty strings
-    if (looklen < 1) {
-        fprintf(stderr, "Cannot look within a string a string of size %i", looklen);
+    if (look_len < 1) {
+        fprintf(stderr, "Cannot look within a string a string of size %i", look_len);
         return -1;
     }
 
     // can't search for the empty string
-    if (findlen < 1) {
-        fprintf(stderr, "Cannot search for a string of size %i", findlen);
+    if (find_len < 1) {
+        fprintf(stderr, "Cannot search for a string of size %i", find_len);
     }
 
     // no hope of finding a substring that's longer
-    if (findlen > looklen) {
+    if (find_len > look_len) {
         return -1;
     }
 
-    int last_result = -1;
+    int most_recent_result = -1;
 
-    // loop through entire LookIn string
-    for (int i=0; i<looklen; i++) {
+    // FROM LEFT
+    for (int i=0; i<look_len; i++) {
         // if one matching character is found
-        if (lookstr[i] == findstr[0]) {
+        if (look_str[i] == find_str[0]) {
             // tentatively mark true match
             is_match = true;
             // check the subsequence characters
-            for (int j=1; j<findlen; j++) {
-                // if this would cause us to go beyond the lookstr's end, there's no hope for a match
-                if (i+j >= looklen) {
+            for (int j=1; j<find_len; j++) {
+                // if this would cause us to go beyond the look_str's end, there's no hope for a match
+                if (i+j >= look_len) {
                     is_match = false;
                     break;
                 }
-                // otherwise, we need to match ALL subsequent characters in findstr
-                is_match = is_match && (lookstr[i+j] == findstr[j]);
+                // otherwise, we need to match ALL subsequent characters in find_str
+                is_match = is_match && (look_str[i+j] == find_str[j]);
             }
-            // if we've reached here with is_match true, then we did find a match: mark the index of the first character that matched
+            // if we've reached here with 'is_match', then record the index of the first character that matched
             if (is_match) {
-                last_result = i;
-                is_match = false;
+                    most_recent_result = i;
+                if (leftmost) {
+                    // if looking for leftmost, stop looking and go to return statement
+                    break;
+                } else {
+                    // if looking for rightmost, keep looking for more
+                    is_match = false;
+                }
             }
         }
     }
-    return last_result;
+
+    // if we've reached here, then we never found any positive matches
+    return most_recent_result;
+
 }
 
 /* ----------------------------
-    If `str` contains a numeric word ("one" thru "nine"), uses findSubstringL() to return the INDEX of the numeric word that occurs earliest in `str`.
-    If there is no such word, returns -1.
-    If such a word does exist, then `firstnum` is updated by pointer to the VALUE of the found numeric word.
+    If `input_str` contains a numeric word ("one" thru "nine"), uses findSubstring() to return the INDEX of the numeric word that occurs LEFTMOST/RIGHTMOST (boolean-controlled) in `input_str`. If there is no such word, returns -1.
+    Whenever a match is found, then `found_number` is updated by pointer to the VALUE of the found numeric word. If it does not, `found_number` is left unchanged.
+    --> Potential speedup: keep a local variable and only update `found_number` at the end to avoid many memory writes. However, it can only happen up to 9 times, so I'm not concerned about performance here.
 ---------------------------- */
-int findFirstNumberWord(const char* str, int len, int* firstnum) {
-    int lowest_index = len+1;
-    int current_test;
 
-    current_test = findSubstringL(str, len, "one", 3);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 1;
+int findNumericWord(const char* input_str, int len, int* found_number, bool leftmost) {
+    // for iterating over
+    const struct {
+        char* name;
+        int length;
+    } NUMBERS[NUM_NUMBERS] = {
+        {"one",     3},
+        {"two",     3},
+        {"three",   5},
+        {"four",    4},
+        {"five",    4},
+        {"six",     3},
+        {"seven",   5},
+        {"eight",   5},
+        {"nine",    4},
+    };
+
+    int winning_index = leftmost ? len+1 : -1;  // index of leftMOST/rightMOST number word
+    int current_test_index;                     // currently-found number word
+
+    // for all numbers in the `number_names` list
+    for (int i=0; i < NUM_NUMBERS; i++) {
+        // look to see if that number word is in the string, and if so, grab its leftmost/rightmost position
+        current_test_index = findSubstring(input_str, len, NUMBERS[i].name, NUMBERS[i].length, leftmost);
+
+        if (current_test_index > -1 &&                                  // if an instance of the number word was found...
+                (   leftmost && current_test_index < winning_index      // ...LEFT:  and it's further left than the current-best one
+                || !leftmost && current_test_index > winning_index)) {  // ...RIGHT: and it's further right that the current-best one
+            // then update the winning index and the number
+            winning_index = current_test_index;
+            *found_number = i+1;
+        }
     }
-    current_test = findSubstringL(str, len, "two", 3);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 2;
-    }
-    current_test = findSubstringL(str, len, "three", 5);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 3;
-    }
-    current_test = findSubstringL(str, len, "four", 4);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 4;
-    }
-    current_test = findSubstringL(str, len, "five", 4);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 5;
-    }
-    current_test = findSubstringL(str, len, "six", 3);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 6;
-    }
-    current_test = findSubstringL(str, len, "seven", 5);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 7;
-    }
-    current_test = findSubstringL(str, len, "eight", 5);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 8;
-    }
-    current_test = findSubstringL(str, len, "nine", 4);
-    if (current_test > -1 && current_test < lowest_index) {
-        lowest_index = current_test;
-        *firstnum = 9;
-    }
-    // current_test = findSubstringL(str, len, "zero", 4);
-    // if (current_test > -1 && current_test < lowest_index) {
-    //     lowest_index = current_test;
-    //     *firstnum = 0;
-    // }
-    
-    if (lowest_index > len) return -1;
-    else return lowest_index;
+
+    // (I could make this a nested ternary expression, but it would only serve to make this less readable)
+    if (leftmost)   // LEFT: if one was found (since it's set to `len` by default otherwise), return it, otherwise -1
+        return (winning_index < len ? winning_index : -1);
+    else            // RIGHT: if one was found, return it, otherwise -1... but by design, it's set to -1 by default, so no test needed
+        return winning_index;
 }
 
 /* ----------------------------
-    If `str` contains a numeric word ("one" thru "nine"), uses findSubstringR() to return the INDEX of the numeric word that occurs latest in `str`.
-    If there is no such word, returns -1.
-    If such a word does exist, then `lastnum` is updated by pointer to the VALUE of the found numeric word.
+    Returns the VALUE of the LEFTMOST/RIGHTMOST (boolean-controlled) decimal character *or* numeric word that appears in `input_str`.
 ---------------------------- */
-int findLastNumberWord(const char* str, int len, int* lastnum) {
-    int highest_index = -1;
-    int current_test;
-
-    current_test = findSubstringR(str, len, "one", 3);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 1;
-    }
-    current_test = findSubstringR(str, len, "two", 3);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 2;
-    }
-    current_test = findSubstringR(str, len, "three", 5);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 3;
-    }
-    current_test = findSubstringR(str, len, "four", 4);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 4;
-    }
-    current_test = findSubstringR(str, len, "five", 4);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 5;
-    }
-    current_test = findSubstringR(str, len, "six", 3);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 6;
-    }
-    current_test = findSubstringR(str, len, "seven", 5);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 7;
-    }
-    current_test = findSubstringR(str, len, "eight", 5);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 8;
-    }
-    current_test = findSubstringR(str, len, "nine", 4);
-    if (current_test > -1 && current_test > highest_index) {
-        highest_index = current_test;
-        *lastnum = 9;
-    }
-    // current_test = findSubstringR(str, len, "zero", 4);
-    // if (current_test > -1 && current_test > highest_index) {
-    //     highest_index = current_test;
-    //     *lastnum = 0;
-    //}
+int findNumericEither(const char* input_str, int len, bool leftmost) {
+    // check for numeric character
+    int found_c_val = -1;
+    int found_c_index = findNumericChar(input_str, len, leftmost);
+    if (found_c_index != -1)
+        found_c_val = input_str[found_c_index] - '0';
     
-    return highest_index;
-}
+    // check for numeric word
+    int found_w_val = -1;
+    int found_w_index = findNumericWord(input_str, len, &found_w_val, leftmost);    // found_w_val updated by pointer
 
-/* ----------------------------
-    Returns the VALUE of the first decimal digit *or* numeric word that appears in `str`.
----------------------------- */
-int findFirstNumber(const char* str, int len) {
-    int firstn_c_val = -1;
-    int firstn_c_idx = findFirstNumberChar(str, len);
-    if (firstn_c_idx != -1)
-        firstn_c_val = str[firstn_c_idx] - '0';
-    
-    //printf("first digit search: found %c at index %i\n", firstn_c_val+'0', firstn_c_idx);
+    // if only one type is found, then obviously the other one is the one to go with (we know the data MUST have one)
+    if (found_c_index == -1) return found_w_val;
+    if (found_w_index == -1) return found_c_val;
 
-    int firstn_w_val = -1;
-    int firstn_w_idx = findFirstNumberWord(str, len, &firstn_w_val);
-
-    //printf("first word search: found %i at index %i\n", firstn_w_val, firstn_w_idx);
-
-    if (firstn_c_idx == -1)
-        return firstn_w_val;
-    if (firstn_w_idx == -1)
-        return firstn_c_val;
-    return (firstn_c_idx < firstn_w_idx ? firstn_c_val : firstn_w_val);
-}
-
-/* ----------------------------
-    Returns the VALUE of the last decimal digit *or* numeric word that appears in `str`.
----------------------------- */
-int findLastNumber(const char* str, int len) {
-    int lastn_c_val = -1;
-    int lastn_c_idx = findLastNumberChar(str, len);
-    if (lastn_c_idx != -1)
-        lastn_c_val = str[lastn_c_idx] - '0';
-    
-    //printf("last digit search: found %c at index %i\n", lastn_c_val+'0', lastn_c_idx);
-
-    int lastn_w_val = -1;
-    int lastn_w_idx = findLastNumberWord(str, len, &lastn_w_val);
-
-    //printf("last word search: found %i at index %i\n", lastn_w_val, lastn_w_idx);
-        
-    if (lastn_c_idx == -1)
-        return lastn_w_val;
-    if (lastn_w_idx == -1)
-        return lastn_c_val;
-    return (lastn_c_idx > lastn_w_idx ? lastn_c_val : lastn_w_val);
+    // else, if both types are found, then choose the LEFTMOST/RIGHTMOST one
+    if (leftmost)
+        return (found_c_index < found_w_index ? found_c_val : found_w_val);
+    else
+        return (found_c_index > found_w_index ? found_c_val : found_w_val);
 }
