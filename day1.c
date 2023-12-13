@@ -51,10 +51,9 @@ bool isDigit(char c) {
 }
 
 /* ----------------------------
-    Returns the address of the first numeric character in the string `input_str` (of length `len`).
+    Returns the address of the LEFTMOST/RIGHTMOST (boolean-controlled) numeric character in the string `input_str` (of length `len`).
     Returns -1 if there is no numeric character.
 ---------------------------- */
-
 int findNumericChar(const char* input_str, int len, bool leftmost) {
     int return_index = -1;
     
@@ -77,7 +76,6 @@ int findNumericChar(const char* input_str, int len, bool leftmost) {
     If `lookstr` contains `find_str` as a substring, returns the index of the first character of the LEFTMOST/RIGHTMOST (boolean-controlled) instance of the substring in `lookstr`.
     Returns -1 if `find_str` is not a substring of `look_str`, or if `find_str` is empty.
 ---------------------------- */
-
 int findSubstring(const char* look_str, int look_len, const char* find_str, int find_len, bool leftmost) {
     bool is_match = false;
     // can't search within empty strings
@@ -138,7 +136,6 @@ int findSubstring(const char* look_str, int look_len, const char* find_str, int 
     Whenever a match is found, then `found_number` is updated by pointer to the VALUE of the found numeric word. If it does not, `found_number` is left unchanged.
     --> Potential speedup: keep a local variable and only update `found_number` at the end to avoid many memory writes. However, it can only happen up to 9 times, so I'm not concerned about performance here.
 ---------------------------- */
-
 int findNumericWord(const char* input_str, int len, int* found_number, bool leftmost) {
     // for iterating over
     const struct {
