@@ -7,3 +7,4 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
 3. **C++** _(no stars so far—still a WIP)_
    * first attempted with Haskell, but abandoned due to the headache of not having loop indices or mutable data for this particular problem
 4. **Python** (⭐⭐)
+5. **Python** (⭐)
