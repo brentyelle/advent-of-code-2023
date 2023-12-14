@@ -5,19 +5,22 @@
 #include <algorithm>
 #include <iomanip>
 
+// Identifies what kind of character something is. DIGIT is a numeric digit, PERIOD is '.', and SYMBOL is anything else.
 typedef enum {
     DIGIT, PERIOD, SYMBOL
 } CharID_t;
 
+// Holds information about each line read from the file, including its CharIDs.
 class LineInfo_t {
 public:
-    std::string str;            // the line in string form
-    std::vector<CharID_t> ids;  // each character in the line, identified
+    std::string str;
+    std::vector<CharID_t> ids;
 
     LineInfo_t() : str("") { return; }
     LineInfo_t(std::string s, std::vector<CharID_t> is) : str(s), ids(is) { return; }
 };
 
+// Holds information about each number found in the file.
 class ArrayNum_t {
 public:
     int row;                // row that the number is found at
@@ -29,15 +32,40 @@ public:
     ArrayNum_t() : row(-1), start_col(-1), end_col(-1), num_str(""), is_adj_symbol(false) { return; }
 };
 
+// Holds information about each asterisk '*' found in the file.
+// Technically, an asterisk only counts as a "gear" if it has two adjacent numbers, but I call them all "gears" anyway.
+class ArrayGear_t {
+public:
+    int row;                // row that the gear is found at
+    int col;                // column that the gear is found at
+    int how_many_adj;       // number of adjacent ArrayNumbers
+    long product;           // product of adjacent ArrayNumbers, except it's 0 if `how_many_adj` != 2.
+
+    ArrayGear_t()                      : row(-1), col(-1), how_many_adj(0),   product(1) { return; }
+    ArrayGear_t(int r, int c)          : row(r),  col(c),  how_many_adj(0),   product(1) { return; }
+    ArrayGear_t(int r, int c, int hma) : row(r),  col(c),  how_many_adj(hma), product(1) { return; }
+};
+
+// USED IN BOTH PARTS
 bool isDigit(const char c);
 std::vector<CharID_t> parseForCharIDs(const std::string &inputline);
-std::vector<ArrayNum_t> parseForArrayNums(const int this_row_i, const std::vector<LineInfo_t> &all_lines_info);
-std::vector<ArrayNum_t> confirmAdjecentToSymbol(std::vector<ArrayNum_t> &found_numbers, const LineInfo_t &this_line, const int this_row_i, const std::vector<LineInfo_t> &all_lines_info);
-std::vector<ArrayNum_t> findAllArrayNums(const LineInfo_t &this_line, const int this_row_i);
-std::vector<CharID_t> charVecSlice(const std::vector<CharID_t> &vec, const int from, const int to);
-bool charVecHas(const std::vector<CharID_t> &vec, const CharID_t &val);
 std::string printRowOfIDs(const std::vector<CharID_t> &lineinfo);
 
+// PART 1 FUNCTIONS
+std::vector<ArrayNum_t> parseForArrayNums(const int this_row_i, const std::vector<LineInfo_t> &all_lines_info);
+void confirmAdjecentToSymbol(std::vector<ArrayNum_t> &found_numbers, const int this_row_i, const std::vector<LineInfo_t> &all_lines_info);
+std::vector<ArrayNum_t> locateArrayNums(const int this_row_i, const LineInfo_t &this_line);
+bool charVecHas(const std::vector<CharID_t> &vec, const CharID_t &val);
+std::vector<CharID_t> charVecSlice(const std::vector<CharID_t> &vec, const int from, const int to);
+
+// PART 2 FUNCTIONS
+std::vector<ArrayGear_t> parseForArrayGears(const int this_row_i, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums);
+std::vector<ArrayGear_t> locateArrayGears(const int i, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums);
+int countAdjacentArrayNums(const int i, const int j, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums);
+bool gearTouchesArrayNum(const ArrayNum_t &an, const int i, const int j);
+void computeGearProducts(std::vector<ArrayGear_t> &all_array_gears, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums);
+
+// MAIN
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cout << "Usage: ./a.out <filename_to_process>" << std::endl;
@@ -52,6 +80,7 @@ int main(int argc, char* argv[]) {
     std::string thisline;
     std::vector<LineInfo_t> all_lines_info;
     std::vector<ArrayNum_t> all_ANs;
+    std::vector<ArrayGear_t> all_AGs;
 
     while (getline(inputfile, thisline)) {
         // trim newline and carriage-return characters
@@ -64,22 +93,33 @@ int main(int argc, char* argv[]) {
 
     // Part 1: For each line, grab its ArrayNumbers (identified for adjacency/non-adjacency to SYMBOLs) and store them in `all_ANs`
     for (int row_ct=0; row_ct < all_lines_info.size(); row_ct++) {
-        std::vector<ArrayNum_t> thisline_ANs = parseForArrayNums(row_ct, all_lines_info);
-        // concatenate the just-grabbed ANs onto the accumulator
+        std::vector<ArrayNum_t> thisline_ANs  = parseForArrayNums(row_ct, all_lines_info);
         all_ANs.insert(std::end(all_ANs), std::begin(thisline_ANs), std::end(thisline_ANs));
     }
 
-    // Part 1: Sum up all ArrayNumbers that were identified as being adjacent to a SYMBOL, ignore the rest
-    int sum = 0;
+    int sum1 = 0;
     for (const ArrayNum_t an : all_ANs) {
         if (an.is_adj_symbol)
-            sum += std::stoi(an.num_str);
+            sum1 += std::stoi(an.num_str);
     }
 
-    std::cout << "Part 1: Sum of all part-numbers is: " << sum << std::endl;
+    // Part 2: 
+    for (int row_ct=0; row_ct < all_lines_info.size(); row_ct++) {
+        std::vector<ArrayGear_t> thisline_AGs = parseForArrayGears(row_ct, all_lines_info, all_ANs);
+        all_AGs.insert(std::end(all_AGs), std::begin(thisline_AGs), std::end(thisline_AGs));
+    }
+
+    int sum2 = 0;
+    for (const ArrayGear_t ag : all_AGs) {
+        sum2 += ag.product;
+    }
+
+    std::cout << "Part 1: Sum of all part-numbers is: " << sum1 << std::endl;
+    std::cout << "Part 2: Sum of all gear-numbers is: " << sum2 << std::endl;
     return 0;
 }
 
+// ===============================================================================================
 /* ---------------------------------
 Hopefully self-explanatory.
 --------------------------------- */
@@ -106,21 +146,36 @@ std::vector<CharID_t> parseForCharIDs(const std::string &inputline) {
     return symbol_ids;
 }
 
-
 /* ---------------------------------
-The meat-and-potatoes of Part 1
+For debugging: Prints all of the CharIDs in a vector.
+--------------------------------- */
+std::string printRowOfIDs(const std::vector<CharID_t> &lineinfo) {
+    std::string string_to_print;
+    for (const CharID_t char_id : lineinfo) {
+        if (char_id == DIGIT)  string_to_print += '#';
+        if (char_id == SYMBOL) string_to_print += '*';
+        if (char_id == PERIOD) string_to_print += '.';
+    }
+
+    string_to_print += '\n';
+    return string_to_print;
+}
+
+// ===============================================================================================
+/* ---------------------------------
+Combines all component functions for solving Part 1.
 --------------------------------- */
 std::vector<ArrayNum_t> parseForArrayNums(const int this_row_i, const std::vector<LineInfo_t> &all_lines_info) {
-    const LineInfo_t &this_line = all_lines_info[this_row_i];   // for readability
-    std::vector<ArrayNum_t> all_array_nums = findAllArrayNums(this_line, this_row_i);
-    return confirmAdjecentToSymbol(all_array_nums, this_line, this_row_i, all_lines_info);
+    std::vector<ArrayNum_t> all_array_nums = locateArrayNums(this_row_i, all_lines_info[this_row_i]);
+    confirmAdjecentToSymbol(all_array_nums, this_row_i, all_lines_info);
+    return all_array_nums;
 }
 
 /* ---------------------------------
 Extracts all numbers found in `this_line` and returns a vector of ArrayNum_t of all of them.
 However, this then needs to be passed to `confirmAdjacentToSymbol` to check if they are indeed adjacent to symbols.
 --------------------------------- */
-std::vector<ArrayNum_t> findAllArrayNums(const LineInfo_t &this_line, const int this_row_i) {
+std::vector<ArrayNum_t> locateArrayNums(const int this_row_i, const LineInfo_t &this_line) {
     std::vector<ArrayNum_t> found_numbers;                      // will hold all ArrayNumbers that are found
     ArrayNum_t new_AN;                                          // will temporarily hold new ArrayNumber as we find it, to be pushed into `found_numbers`
     bool finding_number = false;                                // whether we're currently in the process of building a number from found digits
@@ -166,8 +221,9 @@ std::vector<ArrayNum_t> findAllArrayNums(const LineInfo_t &this_line, const int 
 /* ---------------------------------
 Given the list `found_numbers`, adjusts each element's `.is_adj_symbol` ("is adjacent to SYMBOL") boolean value by looking around for adjacentSYMBOLs in the `all_lines_info` table on the same row.
 --------------------------------- */
-std::vector<ArrayNum_t> confirmAdjecentToSymbol(std::vector<ArrayNum_t> &found_numbers, const LineInfo_t &this_line, const int this_row_i, const std::vector<LineInfo_t> &all_lines_info)
-{
+void confirmAdjecentToSymbol(std::vector<ArrayNum_t> &found_numbers, const int this_row_i, const std::vector<LineInfo_t> &all_lines_info) {
+    const LineInfo_t &this_line = all_lines_info[this_row_i];
+
     // identify which of the found numbers are adjacent to symbols
     for (int k = 0; k < found_numbers.size(); k++)
     {
@@ -192,10 +248,8 @@ std::vector<ArrayNum_t> confirmAdjecentToSymbol(std::vector<ArrayNum_t> &found_n
             found_numbers[k].is_adj_symbol = false;
     }
 
-    return found_numbers;
+    return;
 }
-
-
 
 /* ---------------------------------
 Do some Python-esque slicing of the given vector of CharIDs, but with guards to prevent out-of-bounds access.
@@ -222,17 +276,75 @@ bool charVecHas(const std::vector<CharID_t> &vec, const CharID_t &search_val) {
     return false;
 }
 
+// ===============================================================================================
 /* ---------------------------------
-For debugging: Prints all of the CharIDs in a vector.
+Combines all component functions for solving Part 2. Requires that all ArrayNumbers have already been found for Part 1.
 --------------------------------- */
-std::string printRowOfIDs(const std::vector<CharID_t> &lineinfo) {
-    std::string string_to_print;
-    for (const CharID_t char_id : lineinfo) {
-        if (char_id == DIGIT)  string_to_print += '#';
-        if (char_id == SYMBOL) string_to_print += '*';
-        if (char_id == PERIOD) string_to_print += '.';
+std::vector<ArrayGear_t> parseForArrayGears(const int this_row_i, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums) {
+    std::vector<ArrayGear_t> all_array_gears = locateArrayGears(this_row_i, all_lines_info, all_array_nums);
+    computeGearProducts(all_array_gears, all_lines_info, all_array_nums);
+    return all_array_gears;
+}
+
+/* ---------------------------------
+Extracts all numbers found in `this_line` and returns a vector of ArrayGear_t of all of them.
+However, this then needs to be passed to `computeGearProducts` calculate all of the gear products.
+--------------------------------- */
+std::vector<ArrayGear_t> locateArrayGears(const int i, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums) {
+    std::vector<ArrayGear_t> all_array_gears;
+    ArrayGear_t newgear;
+    for (int j = 0; j < all_lines_info[i].str.length(); j++)
+    {
+        if (all_lines_info[i].str[j] == '*')
+        {
+            all_array_gears.emplace_back(i, j, countAdjacentArrayNums(i, j, all_lines_info, all_array_nums));
+        }
     }
 
-    string_to_print += '\n';
-    return string_to_print;
+    return all_array_gears;
+}
+
+/* ---------------------------------
+Given the location of all ArrayGears, calculates how many adjacent ArrayNumbers there are.
+--------------------------------- */
+int countAdjacentArrayNums(const int i, const int j, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums) {
+    int adj_count{0};
+    const bool j_above0 = (j > 0);
+    const bool j_belowL = (j + 1 < all_lines_info[i].ids.size());
+
+    for (const ArrayNum_t an : all_array_nums) {
+        if (gearTouchesArrayNum(an, i, j))
+            adj_count++;
+    }
+
+    return adj_count;
+}
+
+/* ---------------------------------
+Returns `true` if the gear located at (i,j) touches the given ArrayNum.
+--------------------------------- */
+bool gearTouchesArrayNum(const ArrayNum_t &an, const int i, const int j) {
+    return (i >= an.row-1 && i <= an.row+1 && j >= an.start_col-1 && j <= an.end_col+1);
+}
+
+void computeGearProducts(std::vector<ArrayGear_t> &all_array_gears, const std::vector<LineInfo_t> &all_lines_info, const std::vector<ArrayNum_t> &all_array_nums) {
+    for (int g=0; g < all_array_gears.size(); g++) {
+        ArrayGear_t &thisgear = all_array_gears[g];
+        const int i = thisgear.row;
+        const int j = thisgear.col;
+        long prod = 1;
+        if (thisgear.how_many_adj == 2) {
+            std::cout << "Gear at " << i << "," << j << " has " << thisgear.how_many_adj << " adj numbers!" << std::endl;
+                for (const ArrayNum_t an : all_array_nums) {
+                    if (gearTouchesArrayNum(an, i, j)) {
+                        prod *= static_cast<long>(std::stoi(an.num_str));
+                        std::cout << " - It touches the number " << an.num_str << ", so the product is now " << prod << std::endl;
+                    }
+                }
+        } else {
+            std::cout << "Gear at " << i << "," << j << " has " << thisgear.how_many_adj << " adj numbers, so it doesn't count." << std::endl;
+            prod = 0;
+        }
+        thisgear.product = prod;
+    }
 }
