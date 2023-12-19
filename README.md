@@ -9,6 +9,7 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
 5. **Python** (⭐⭐) - (Part I) Dec 13, 2023; (Part II) Dec 14, 2023
 6. **Haskell** (⭐⭐) - Dec 14, 2023
 7. **Python** (⭐) - (Part I) Dec 14, 2023
+8. **C++** (⭐⭐) - Dec 18, 2023
 
 ## Notes
 * Day 3 was first attempted with Haskell, but abandoned due to the headache of not having loop indices or mutable data for this particular problem. Thankfully, C++ was much better suited to the task at hand.
