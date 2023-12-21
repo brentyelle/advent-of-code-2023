@@ -7,7 +7,7 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
 3. **C++** (⭐⭐) - Dec 14, 2023
 4. **Python** (⭐⭐) - Dec 12, 2023
 5. **Python** (⭐⭐) - (Part I) Dec 13, 2023; (Part II) Dec 14, 2023
-6. **Haskell** (⭐⭐) - Dec 14, 2023; 
+6. **Haskell** (⭐⭐) - Dec 14, 2023
    * later re-done in **NASM x86-64** - Dec 20, 2023
 7. **Python** (⭐) - (Part I) Dec 14, 2023
 8. **C++** (⭐⭐) - Dec 18, 2023
