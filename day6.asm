@@ -9,26 +9,27 @@
 
 SECTION .bss
 ; temporary holders for floating-point values
-temp_half_m: resq 1                 ; m/2
-temp_halfsqrt_discriminant: resq 1  ; sqrt(m^2 - 4*r)/2
-temp_plus: resq 1                   ; m/2 + sqrt(m^2 - 4*r)/2
-temp_minus: resq 1                  ; m/2 - sqrt(m^2 - 4*r)/2
+temp_half_m: resq 1                             ; m/2
+temp_halfsqrt_discriminant: resq 1              ; sqrt(m^2 - 4*r)/2
+temp_plus: resq 1                               ; m/2 + sqrt(m^2 - 4*r)/2
+temp_minus: resq 1                              ; m/2 - sqrt(m^2 - 4*r)/2
 ; temporary holders for FPU Control Words
-temp_oldCW: resw 1                  ; holds original control word (to restore it later)
-temp_newCW: resw 1                  ; holds new word (that we're switching in temporarily)
+temp_oldCW: resw 1                              ; holds original control word (to restore it later)
+temp_newCW: resw 1                              ; holds new word (that we're switching in temporarily)
 ; temporary holders for rounded versions of `temp_plus` and `temp_minus`
-temp_plus_int: resq 1               ; ceiling(temp_plus - 1)
-temp_minus_int: resq 1              ; floor(temp_plus + 1)
+temp_plus_int: resq 1                           ; ceiling(temp_plus - 1)
+temp_minus_int: resq 1                          ; floor(temp_plus + 1)
 
 SECTION .data
 ; to hold answer (a cumulative product), and its base-10 ASCII representation
 answer_num: dq 1                                ; integer form
-answer_num_str: db "____________________", 10   ; base-10 ASCII representation, right-justified
+answer_num_str: db "____________________", 10   ; base-10 ASCII representation, right-justified, 21 bytes long (10 is a newline character)
+ANSWER_NUM_STR_LEN: equ 21                      ; length of the above string
 answer_num_str_offset: dq 0                     ; offset in the above string where the number starts
 ; to hold nicely-printed string to introduce answers for Part 1 and Part 2
 display_string: db "Answer for Part _: "
-DISPLAY_STRING_LEN: equ $-display_string    ; length of the above string
-DISPLAY_STRING_DIGIT: equ 16                ; position of the '_' in the above string, to replace with a digit
+DISPLAY_STRING_LEN: equ $-display_string        ; length of the above string
+DISPLAY_STRING_DIGIT: equ 16                    ; position of the '_' in the above string, to replace with a digit
 
 SECTION .rodata
 ; data for the test case of part 1
@@ -81,11 +82,11 @@ exit:
 
 
 ; -------------------------------
-; itos: converts an integer to its base-10 form in printable ASCII. Number will be right-justified, be stored in first 20 bytes.
+; itos: converts an integer to its base-10 form in printable ASCII. Number will be right-justified, be stored in first 20 bytes of the string pointed at by RSI, with leading places filled with spaces. The size of 20 bytes was chosen because the largest 64-bit unsigned integer, 2^64 - 1 = 18446744073709551615, is 20 decimal digits.
 ; -------------------------------
-; PARAM1 (RDI): number to be converted
-; PARAM2 (RSI): address of string to hold converted number; output string will 
-; RETURN (RAX): offset of the number's first ASCII digit from the initial address
+; PARAM1 (RDI): number to be converted (qword value)
+; PARAM2 (RSI): address of string to hold converted number
+; RETURN (RAX): offset of the number's first ASCII digit from the initial address (qword value)
 ; -------------------------------
 itos:
     ; storing previous arguments
@@ -102,7 +103,7 @@ itos_fillspaces_setup:
 itos_fillspaces_loop:
     ; fill the first 20 bytes of the given array with spaces
     ; for (count=20; count>0; count--)
-    mov BYTE [rbx], ' '              ; array[i] = ' '  (starts at i=0)
+    mov BYTE [rbx], ' '         ; array[i] = ' '  (starts at i=0)
     inc rbx                     ; i++
     loop itos_fillspaces_loop
 itos_convert_setup:
@@ -118,10 +119,7 @@ itos_convert_loop:
     idiv r10                    ; divide by 10, now RAX holds quotient and RDX holds remainder
     add rdx, '0'                ; RDX holds ASCII value of the corresponding digit
     mov [rbx], dl               ; store that ASCII value in array[i]
-    ; safety feature to avoid writing out of memory
-    ;cmp rbx, rsi                ; if i==0, we've reached the leftmost end of the writable string
-    ;je itos_afterloop           ; so exit the loop
-    jmp itos_convert_loop        ; otherwise, keep looping
+    jmp itos_convert_loop       ; otherwise, keep looping
 itos_afterloop:
     ; at this point:
     ;   RAX holds 0
@@ -141,11 +139,12 @@ itos_afterloop:
     ret
 
 ; -------------------------------
-; raceWinLimits:
+; raceWinLimits: If there is a set length of time `m`, then given an integer length of time x (0 <= x <= maxtime), the distance that we go in the race is `d(x) = x * (m - x)`. If there is a record `r` that we're trying to beat, we need to find the intersection points of `d(x) = r`, and the winning times will be all integers between (exclusive) these intersection points. We can achieve this exclusion by rounding appropriately.
+; Solving the quadratic equation `x*(m-x) = r` for `x`, we get: `x = m/2 ± sqrt(m^2 - 4*r)/2`. First, we calculate these two solutions, we round them appropriately to get the integer limits `x_min` and `x_max`, then calculate the number of integers in that range `[x_min, x_max]` as `x_max - x_min + 1`.
 ; -------------------------------
 ; PARAM1 (RDI): pointer to maximum time allowed on a race (`m`)
 ; PARAM2 (RSI): pointer to record distance in the given race (`r`)
-; RETURN (RAX): number of ways to beat the record
+; RETURN (RAX): number of ways to beat the record (qword value)
 ; -------------------------------
 raceWinLimits:
     ; store register backups
@@ -164,7 +163,7 @@ raceWinLimits_calc_halfsqrt_discriminant:
     fild QWORD [TWO]                    ; setup to divide by 2
     fdivp                               ; ST(0) = sqrt(m^2 - 4*r) / 2
     ; copy ST(0) into memory
-    fstp QWORD [temp_halfsqrt_discriminant] ; pop ST(0) and store into memory
+    fstp QWORD [temp_halfsqrt_discriminant] ; pop ST(0) and store into memory: this is half of the square root of the discriminant
     ; FPU stack is now empty
 raceWinLimits_calc_half_m:
     ; calculate m/2
@@ -213,9 +212,9 @@ raceWinLimits_round_cleanup:
     ; restore original FPU control word
     fldcw [temp_oldCW]
 raceWinLimits_get_range:
-    mov rax, [temp_plus_int]    ; RAX = maximum
-    sub rax, [temp_minus_int]   ; RAX = maximum - minimum
-    inc rax                     ; RAX = maximum - minimum + 1
+    mov rax, [temp_plus_int]            ; RAX = maximum
+    sub rax, [temp_minus_int]           ; RAX = maximum - minimum
+    inc rax                             ; RAX = maximum - minimum + 1
 raceWinLimits_exit:
     ; restore pre-function state of registers
     pop rsi
@@ -223,7 +222,7 @@ raceWinLimits_exit:
     ret
 
 ; -------------------------------
-; run_over_array:
+; run_over_array: Given two parallel arrays pointed at by RDI and RSI (containing maximum race times and records, respectively), this function iterates over every pair and runs `raceWinLimits` on them. Each result from calling `raceWinLimits` is then taken and multiplied into a cumulative product (initialized to 1). At the conclusion of all loop iterations, the cumulative product is printed.
 ; -------------------------------
 ; PARAM1 (RDI): pointer to qword array of maximum times
 ; PARAM2 (RSI): pointer to qword array of records
@@ -231,7 +230,7 @@ raceWinLimits_exit:
 ; PARAM4 (RCX): pointer to qword-location to store numerical result (cumulative product)
 ; PARAM5 (R8) : pointer to 21-byte string to hold ASCII version of result
 ; PARAM6 (R9) : pointer to qword-location to store offset in the above ASCII string
-; RETURN (RAX): cumulative product (value stored at address in RCX)
+; RETURN (RAX): cumulative product (qword, value stored at address in RCX)
 ; -------------------------------
 run_over_array:
     ; make backup of pre-function state
@@ -242,29 +241,29 @@ run_over_array:
     push rbx
     push rcx
     ; we need to use RCX for a lot, so move its value into R15
-    mov r15, rcx    ; R15 is a duplicate of RCX's argument-value
+    mov r15, rcx        ; R15 is a duplicate of RCX's argument-value
 roa_setup:
-    mov r11, rdi    ; R11 will hold &max_times[i]
-    mov r12, rsi    ; R12 will hold &records[i]
-    mov rcx, rdx    ; RCX will hold loop counter (# of elements in parallel arrays above)
-    mov QWORD [r15], 1    ; reset cumulative product to 1
+    mov r11, rdi        ; R11 will hold &max_times[i]
+    mov r12, rsi        ; R12 will hold &records[i]
+    mov rcx, rdx        ; RCX will hold loop counter (# of elements in parallel arrays above)
+    mov QWORD [r15], 1  ; reset cumulative product to 1
 roa_loopstart:
-    mov rdi, r11    ; PARAM1: &max_times[i]
-    mov rsi, r12    ; PARAM2: &records[i]
+    mov rdi, r11        ; PARAM1: &max_times[i]
+    mov rsi, r12        ; PARAM2: &records[i]
     call raceWinLimits
     ; RAX now holds the number of ways we could win 
 roa_multiply:
-    mov rbx, rax    ; RBX = number_of_ways_we_could_win[i]
-    mov rax, [r15]  ; RAX = cumulative product of number_of_ways_we_could_win[i]
-    imul rbx        ; RBX = new cumulative product
-    mov [r15], rax  ; store cumulative product back in memory
-    add r11, 8      ; R11 now holds &max_times[i+1]
-    add r12, 8      ; R12 now holds &records[i+1]
+    mov rbx, rax        ; RBX = number_of_ways_we_could_win[i]
+    mov rax, [r15]      ; RAX = cumulative product of number_of_ways_we_could_win[i]
+    imul rbx            ; RBX = new cumulative product
+    mov [r15], rax      ; store cumulative product back in memory
+    add r11, 8          ; R11 now holds &max_times[i+1]
+    add r12, 8          ; R12 now holds &records[i+1]
     loop roa_loopstart
 roa_showanswer1:
     ; convert cumulative product to a string
-    mov rdi, [r15]  ; PARAM1: value to convert (cumulative product)
-    mov rsi, r8     ; PARAM2: pointer to 21-byte string to hold the ASCII number
+    mov rdi, [r15]      ; PARAM1: value to convert (cumulative product)
+    mov rsi, r8         ; PARAM2: pointer to 21-byte string to hold the ASCII number
     call itos
     ; RAX holds the offset in the string to start printing at
     mov [r9], rax   ; store the offset of the string
@@ -279,9 +278,9 @@ roa_showanswer2:
     mov rax, 1                  ; sys_write
     mov rdi, 1                  ; stdout
     mov rsi, r8                 ; RSI = pointer to ASCII string of number result
-    add rsi, [r9]               ; shift pointer by the known offset
-    mov rdx, 21                 ; RDX = length of the above ascii string
-    sub rdx, [r9]               ; shift length by the known offset
+    add rsi, [r9]               ; shift pointer by the known offset (to get only the numeric chars & the newline)
+    mov rdx, ANSWER_NUM_STR_LEN ; RDX = length of the above ascii string
+    sub rdx, [r9]               ; shift length by the known offset (to not print past the end of the string)
     syscall
 roa_exit:
     ; restore pre-function values
