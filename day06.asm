@@ -1,9 +1,9 @@
-; day6.asm
+; day06.asm
 ; FORMAT: x86-64 NASM
 ; AUTHOR: Brent Yelle
 ; PURPOSE: Advent of Code 2023, Day 6: https://adventofcode.com/2023/day/6
 ; ASSEMBLING INSTRUCTIONS:
-;    $ nasm -g -felf64 day6.asm
+;    $ nasm -g -felf64 day06.asm
 ;    $ ld -g day6.o
 ;    $ ./a.out
 
