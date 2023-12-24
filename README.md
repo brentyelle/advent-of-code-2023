@@ -26,3 +26,8 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
 10. **C++** (⭐) — _(Part I)_ Dec 22, 2023
     * This puzzle marks the first day where, going into the puzzle, I am not yet sure *how* to go about solving Part II...
     * ...But one possible idea is to (1) mark every non-pipe as "contained", then (2) re-mark every non-pipe that isn't adjacent to a path-pipe as "not contained", then (3) recursively re-re-mark every "not contained" non-pipe adjacent to a "contained" non-pipe as "contained" again.
+11. _(not yet attempted)_
+12. _(not yet attempted)_
+13. _(not yet attempted)_
+14. _(not yet attempted)_
+15. **C** (⭐) — _(Part I)_ Dec 24, 2023
