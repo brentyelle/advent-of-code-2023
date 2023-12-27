@@ -4,16 +4,16 @@
 #define LIMIT_STEPS 26501365
 #define DUMMYCHAR 'y'
 
-typedef long long int llint;
+typedef long long int myint;
 
 enum class TILE {START, GARDEN, ROCK, INVALID};
 
 class Indices {
 public:
-    llint x;
-    llint y;
+    myint x;
+    myint y;
 
-    Indices(const llint xx=0, const llint yy=0) : x(xx), y(yy) { return; }
+    Indices(const myint xx=0, const myint yy=0) : x(xx), y(yy) { return; }
 
     bool operator==(const Indices& rhs) const {
         return (x == rhs.x && y == rhs.y);
@@ -25,7 +25,7 @@ template <> struct std::hash<Indices> {
         using std::size;
         using std::hash;
 
-        return hash<long long int>()(ij.x) ^ hash<long long int>()(ij.y);
+        return hash<myint>()(ij.x) ^ hash<myint>()(ij.y << 1);
     }
 };
 
@@ -107,7 +107,6 @@ public:
         return;
     }
 
-
     Indices dimensions() const {
         Indices indices;
         indices.x = tiles.size();
@@ -119,10 +118,10 @@ public:
         return indices;
     }
 
-    TileType& tiles_loopat(const llint ti, const llint tj) {
+    TileType& tiles_loopat(const myint ti, const myint tj) {
         const Indices tiles_max = dimensions();
-        llint ti_fixed = ti % tiles_max.x;
-        llint tj_fixed = tj % tiles_max.y;
+        myint ti_fixed = ti % tiles_max.x;
+        myint tj_fixed = tj % tiles_max.y;
         if (ti_fixed < 0)
             ti_fixed += tiles_max.x;
         if (tj_fixed < 0)
@@ -130,7 +129,18 @@ public:
         return tiles.at(ti_fixed).at(tj_fixed);
     }
 
-    llint count_reached() const {
+    const TileType& tiles_loopat_const(const myint ti, const myint tj) const {
+        const Indices tiles_max = dimensions();
+        myint ti_fixed = ti % tiles_max.x;
+        myint tj_fixed = tj % tiles_max.y;
+        if (ti_fixed < 0)
+            ti_fixed += tiles_max.x;
+        if (tj_fixed < 0)
+            tj_fixed += tiles_max.y;
+        return tiles.at(ti_fixed).at(tj_fixed);
+    }
+
+    myint count_reached() const {
         return reached_inds.size();
     }
 
@@ -138,13 +148,8 @@ public:
         return is_valid_coord(ij) && tiles.at(ij.x).at(ij.y).is_traversible();
     }
 
-    bool can_traverse_loop(const Indices &ij) {
-        return tiles_loopat(ij.x, ij.y).is_traversible();
-    }
-
-    bool is_valid_coord(const llint ti, const llint tj) const {
-        const Indices tiles_max = dimensions();
-        return (ti >= 0 && tj >= 0 && ti < tiles_max.x && tj < tiles_max.y);
+    bool can_traverse_loop(const Indices &ij) const {
+        return tiles_loopat_const(ij.x, ij.y).is_traversible();
     }
 
     bool is_valid_coord(const Indices& inds) const {
@@ -158,8 +163,8 @@ public:
         printf("Dimensions are %lld-by-%lld\n", tiles_max.x, tiles_max.y);
 
         bool continuefor = true;
-        for (llint ti{0}; continuefor && (ti < tiles_max.x); ti++) {
-            for (llint tj{0}; continuefor && (tj < tiles_max.y); tj++) {
+        for (myint ti{0}; continuefor && (ti < tiles_max.x); ti++) {
+            for (myint tj{0}; continuefor && (tj < tiles_max.y); tj++) {
                 if (tiles.at(ti).at(tj).is_start()) {
                     reached_inds.emplace(Indices(ti, tj), DUMMYCHAR);
                     continuefor = false;
@@ -171,12 +176,11 @@ public:
         return;
     }
 
-    void read_file(FILE* inputfile) {
+    void read_file(FILE* const inputfile) {
         tiles.clear();
-        reached_inds.clear();
 
         char curr_char;
-        llint curr_row = 0;
+        myint curr_row = 0;
 
         rewind(inputfile);
         curr_char = fgetc(inputfile);
@@ -216,8 +220,8 @@ public:
     void step_once();
     void step_once_loop();
 
-    void step(const llint n=1, bool please_print=false) {
-        for (llint i=1; i <= n; i++) {
+    void step(const myint n=1, bool please_print=false) {
+        for (myint i=1; i <= n; i++) {
             step_once();
             if (please_print) {
                 printf("==================================\n");
@@ -229,8 +233,8 @@ public:
         return;
     }
 
-    void step_loop(const llint n=1, bool please_print=false) {
-        for (llint i=1; i <= n; i++) {
+    void step_loop(const myint n=1, bool please_print=false) {
+        for (myint i=1; i <= n; i++) {
             step_once_loop();
             if (please_print) {
                 printf("==================================\n");
@@ -242,16 +246,15 @@ public:
         return;
     }
 
-    friend bool has_entry(const std::unordered_map<Indices, char> &inds, const llint i, const llint j);
+    friend bool has_entry(const std::unordered_map<Indices, char> &inds, const myint i, const myint j);
     friend bool has_entry(const std::unordered_map<Indices, char> &inds, const Indices& ij);
 };
 
 // ====================================================
 
-bool has_entry(const std::unordered_map<Indices, char> &inds, const llint i, const llint j) {
+bool has_entry(const std::unordered_map<Indices, char> &inds, const myint i, const myint j) {
     return (inds.find(Indices(i,j)) != inds.end());
 }
-
 bool has_entry(const std::unordered_map<Indices, char> &inds, const Indices& ij) {
     return (inds.find(ij) != inds.end());
 } 
@@ -259,8 +262,8 @@ bool has_entry(const std::unordered_map<Indices, char> &inds, const Indices& ij)
 void TileArray::print_tiles() const {
     const Indices tiles_max = dimensions();
 
-    for (llint i=0; i < tiles_max.x; i++) {
-        for (llint j=0; j < tiles_max.y; j++) {
+    for (myint i=0; i < tiles_max.x; i++) {
+        for (myint j=0; j < tiles_max.y; j++) {
             if (has_entry(reached_inds, i, j)) {
                 std::cout << 'O';
             } else {
@@ -275,23 +278,24 @@ void TileArray::print_tiles() const {
 
 void TileArray::step_once() {
     std::unordered_map<Indices, char> new_reached_inds;
+    new_reached_inds.reserve(reached_inds.size());
 
     // for each index we reached last step, try to step to that index's adjacent places
     for (const auto& indexpair : reached_inds) {
-        Indices    up(indexpair.first.x - 1, indexpair.first.y    );
-        Indices  down(indexpair.first.x + 1, indexpair.first.y    );
-        Indices  left(indexpair.first.x    , indexpair.first.y + 1);
-        Indices right(indexpair.first.x    , indexpair.first.y - 1);
+        const Indices    up(indexpair.first.x - 1, indexpair.first.y    );
+        const Indices  down(indexpair.first.x + 1, indexpair.first.y    );
+        const Indices  left(indexpair.first.x    , indexpair.first.y + 1);
+        const Indices right(indexpair.first.x    , indexpair.first.y - 1);
 
         
-        if (is_valid_coord(up) && !has_entry(new_reached_inds, up) && can_traverse(up) ) {
-            new_reached_inds.emplace(up, DUMMYCHAR);
+        if (is_valid_coord(up   ) && !has_entry(new_reached_inds, up   ) && can_traverse(up  ) ) {
+            new_reached_inds.emplace(up,    DUMMYCHAR);
         }
-        if (is_valid_coord(down) && !has_entry(new_reached_inds, down) && can_traverse(down)) {
-            new_reached_inds.emplace(down, DUMMYCHAR);
+        if (is_valid_coord(down ) && !has_entry(new_reached_inds, down ) && can_traverse(down) ) {
+            new_reached_inds.emplace(down,  DUMMYCHAR);
         }
-        if (is_valid_coord(left) && !has_entry(new_reached_inds, left) && can_traverse(left)) {
-            new_reached_inds.emplace(left, DUMMYCHAR);
+        if (is_valid_coord(left ) && !has_entry(new_reached_inds, left ) && can_traverse(left) ) {
+            new_reached_inds.emplace(left,  DUMMYCHAR);
         }
         if (is_valid_coord(right) && !has_entry(new_reached_inds, right) && can_traverse(right)) {
             new_reached_inds.emplace(right, DUMMYCHAR);
@@ -309,11 +313,10 @@ void TileArray::step_once_loop() {
 
     // for each index we reached last step, try to step to that index's adjacent places
     for (const auto& indexpair : reached_inds) {
-        Indices    up(indexpair.first.x - 1, indexpair.first.y    );
-        Indices  down(indexpair.first.x + 1, indexpair.first.y    );
-        Indices  left(indexpair.first.x    , indexpair.first.y + 1);
-        Indices right(indexpair.first.x    , indexpair.first.y - 1);
-
+        const Indices    up(indexpair.first.x - 1, indexpair.first.y    );
+        const Indices  down(indexpair.first.x + 1, indexpair.first.y    );
+        const Indices  left(indexpair.first.x    , indexpair.first.y + 1);
+        const Indices right(indexpair.first.x    , indexpair.first.y - 1);
         
         if (!has_entry(new_reached_inds, up) && can_traverse_loop(up)) {
             new_reached_inds.emplace(up, DUMMYCHAR);
@@ -337,14 +340,14 @@ void TileArray::step_once_loop() {
 
 // ====================================================
 
-int main(int argc, char* argv[]) {
+int main(const int argc, const char* argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: $ ./a.out <filename> <num_iterations>\n";
         exit(1);
     }
 
     const char* FILENAME = argv[1];
-    FILE* infile = fopen(FILENAME, "r");
+    FILE* const infile = fopen(FILENAME, "r");
 
     if (!infile) {
         std::cerr << "Error opening file \"" << argv[1] << "\"\n";
@@ -364,7 +367,7 @@ int main(int argc, char* argv[]) {
     // Part 2:
     all_tiles.reset_to_start();
     printf("----------------------------------\n");
-    llint counter=0;
+    myint counter=0;
     while (all_tiles.count_reached() < LIMIT_STEPS) {
         counter++;
         all_tiles.step_once_loop();
