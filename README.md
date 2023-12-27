@@ -31,3 +31,13 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
 13. _(not yet attempted)_
 14. _(not yet attempted)_
 15. **C** (⭐) — _(Part I)_ Dec 24, 2023
+16. _(not yet attempted)_
+17. _(not yet attempted)_
+18. _(not yet attempted)_
+19. _(not yet attempted)_
+20. _(not yet attempted)_
+21. **C++** (⭐) — _(Part I)_ Dec 26, 2023
+    * Development of this day's solution went through several phases:
+    * In the first phase, I attempted to use an [adjacency matrix](https://en.wikipedia.org/wiki/Adjacency_matrix) to solve the pathing problem "cleverly," but it turns out that doing so is actually extremely slow, due to needing to multiply 121<sup>2</sup>-by-121<sup>2</sup> boolean matrices against each other, even with using caching to my advantage. However, since the matrices were very sparse, I had an idea of what to do next...
+    * In the second phase, I scrapped the idea of an adjacency matrix and instead used a `std::vector` of all of the coordinates that could be reached by taking *n* steps. This allowed the time needed for my program to solve Part I from an estimated half-year down to approximately 0.19 seconds—probably the most drastic performance improvement I've ever seen in one of my own programs.
+    * In the third and current phase, I expanded the program's functionality enough to solve Part 2, but since the `std::vector` of coordinates grows as *Θ(n<sup>2</sup>)* where *n* is the number of steps, the lookup time increased considerably for each iteration. Therefore, I replaced the Part 2 `std::vector` with a `std::unordered_map`, hoping to take advantage of the *Θ(1)* lookup time. Unfortunately, I have yet to see much improvement.
