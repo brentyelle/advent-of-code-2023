@@ -27,10 +27,15 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
     * This puzzle marks the first day where, going into the puzzle, I am not yet sure *how* to go about solving Part II...
     * ...But one possible idea is to (1) mark every non-pipe as "contained", then (2) re-mark every non-pipe that isn't adjacent to a path-pipe as "not contained", then (3) recursively re-re-mark every "not contained" non-pipe adjacent to a "contained" non-pipe as "contained" again.
 11. _(not yet attempted)_
-12. _(not yet attempted)_
+12. **Python** (⭐) — _(Part I)_ Dec 29, 2023
+    * Part I was easy to achieve, but Part II is proving trickier. I've got it down to roughly half of the input lines being calculable within a reasonable amount of time, but the rest of the lines will require a bit more trickery to get working properly.
+    * The core of this "trickery" is to be implemented in the `countArrangementsMult` method, which uses the fact that the Part 2 inputs are near-quintupled in order to attempt to take shortcuts in calculation. For instance, given `.??# (1,1)` as an input, the quintupled string is `[.??#]?[.??#]?[.??#]?[.??#]?[.??#]`, which can be safely rebracketed into `[.??#?][.??#?][.??#?][.??#?][.??#]` with each bracket having the same original patterm `(1,1)`.
+    * I believe the key to getting the computation down is to come up with more and more rules, or perhaps more general versions of my current rules, to increase shorcutting. Calculating of the answer long-form is only reasonably feasible for inputs of up to ~10<sup>7</sup> possible arrangements of `#`s among their `?`s, whereas some get upwards of 10<sup>25</sup> arrangments.
 13. _(not yet attempted)_
 14. _(not yet attempted)_
 15. **C** (⭐) — _(Part I)_ Dec 24, 2023
+    * Part I: My solution processes the input character-by-character and breaks it up into chunks based on using `,` as a delimiter. Then, the given "hashing" algorithm is run over the inputs, and each result is summed. The code's validity rests upon each input chunk being 19 characters or less, due to my built-in buffer length of 20.
+    * Part II: Problem definition not yet read.
 16. _(not yet attempted)_
 17. _(not yet attempted)_
 18. _(not yet attempted)_
