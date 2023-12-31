@@ -38,7 +38,8 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
 15. **C** (⭐) — _(Part I)_ Dec 24, 2023
     * Part I: My solution processes the input character-by-character and breaks it up into chunks based on using `,` as a delimiter. Then, the given "hashing" algorithm is run over the inputs, and each result is summed. The code's validity rests upon each input chunk being 19 characters or less, due to my built-in buffer length of 20.
     * Part II: Problem definition not yet read.
-16. _(not yet attempted)_
+16. **C++** (⭐⭐) — _(Part I)_ Dec 30, 2023; _(Part II)_ Dec 31, 2023
+    * (description forthcoming)
 17. _(not yet attempted)_
 18. _(not yet attempted)_
 19. _(not yet attempted)_
