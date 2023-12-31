@@ -34,12 +34,13 @@ The contents of this repository are my attempts at the [Advent of Code 2023](htt
 13. _(not yet attempted)_
 14. **Python** and **C** (⭐⭐) — Dec 30, 2023
     * Part I was originally completed in Python (`day14-abandoned.py`), but after trying Part II in Python, my algorithm clearly needed a faster language to be usable. Therefore, I rewrote everything in C (`day14-successful.c`), which was unsurprisingly much faster.
-    * For Part II, even though 1 billion iterations were required, I predicted that the cycles would eventually stabilize into a pattern, so I had the code run for merely 50000 iterations and took note of the "final" answer after every 1000 iterations. My prediction turned out to be spot-on: The pattern actually began within the first thousand cycles, and I was able to tabulate the answers and do some division to get a remainder, and that remainder told me which position in the pattern we would be at once we reached the one-billionth iteration.
+    * For Part II (exclusively in C), even though 1 billion iterations were required, I predicted that the cycles would eventually stabilize into a pattern, so I had the code run for merely 50000 iterations and took note of the "final" answer after every 1000 iterations. My prediction turned out to be spot-on: The pattern actually began within the first thousand cycles, and I was able to tabulate the answers and do some division to get a remainder, and that remainder told me which position in the pattern we would be at once we reached the one-billionth iteration.
 15. **C** (⭐) — _(Part I)_ Dec 24, 2023
     * Part I: My solution processes the input character-by-character and breaks it up into chunks based on using `,` as a delimiter. Then, the given "hashing" algorithm is run over the inputs, and each result is summed. The code's validity rests upon each input chunk being 19 characters or less, due to my built-in buffer length of 20.
     * Part II: Problem definition not yet read.
 16. **C++** (⭐⭐) — _(Part I)_ Dec 30, 2023; _(Part II)_ Dec 31, 2023
-    * (description forthcoming)
+    * Like many a C++ project, much of the time spent coding this day's code was spent on building classes and their methods. Part II was actually very easy to implement—one of the easiest among this year's puzzles' Part IIs.
+    * My main "innovation" was that, since the beams of light can become trapped in cycles of reflection, I had each tile in the contraption not only track *that* it was energized, but also *from what direction(s)* it had been energized, which allowed me to cull any light beams that tried to re-tread the steps of prior ones. This kept the number of beams from growing exponentially from the splitter-tiles, and the algorithm was able to complete in a surprisingly short amount of time; for the 440 different beam-iterations required by Part II, I measured my program taking just over 1 min 5 sec.
 17. _(not yet attempted)_
 18. _(not yet attempted)_
 19. _(not yet attempted)_
