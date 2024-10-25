@@ -125,26 +125,33 @@ int first_in_searchables(const HeatMap *const heatmap) {
 
 int z_of_minimum_distance_in_searchables(const HeatMap* const heatmap) {
     // first, grab *a* searchable `z`
-    int zMin = first_in_searchables(heatmap);
-    // if there are none, then return an error
-    if (zMin == ERRVAL) {
+    int zMin = 0;
+    while (!heatmap->points[zMin].searchable) {
+        zMin++;
+    }
+    // if we reached the end of the list, then return an error
+    if (zMin == heatmap->total_vertices) {
         return ERRVAL;
     }
     // otherwise, using the found `z` as a temporary comparison, find the `z` with the minimum distance
     int zMinDist = heatmap->points[zMin].distance;
-    for (int z=0; z < heatmap->total_vertices; z++) {
-        if (heatmap->points[z].searchable && heatmap->points[z].distance < zMinDist) {
+    printf("initial zMin=%d, with distance=%d\n", zMin, zMinDist);
+    for (int z=zMin+1; z < heatmap->total_vertices; z++) {
+        int zDist = heatmap->points[z].distance;
+        if (zDist == zMinDist) printf("--equal-distance point found at z=%d\n", z);
+        if (heatmap->points[z].searchable && zDist < zMinDist) {
             zMin     = z;
-            zMinDist = heatmap->points[z].distance;
+            zMinDist = zDist;
+            printf("  better zMin=%d, with distance=%d\n", zMin, zMinDist);
         }
     }
     return zMin;
 }
 
 bool safe_to_move(int i, int j, const HeatMap* const heatmap, const Direction dir) {
-    const int z     = i * heatmap->max_col + j;
-    int i2 = i;
-    int j2 = j;
+    const int z = i * heatmap->max_col + j;
+    int i2      = i;
+    int j2      = j;
     // this function shouldn't be called with dir=NOWHERE
     if (dir == NOWHERE) {
         fprintf(stderr, "warning: `safe_to_move` called with dir=NOWHERE\n");
@@ -152,6 +159,11 @@ bool safe_to_move(int i, int j, const HeatMap* const heatmap, const Direction di
     }
     // if it would be the 3rd in the same direction, not safe
     if (dir == heatmap->points[z].past1 && dir == heatmap->points[z].past2 && dir == heatmap->points[z].past3) {
+        return false;
+    }
+    // if it would reverse direction, not safe
+    if ((dir == UP    && heatmap->points[z].past1 == DOWN) || (dir == DOWN  && heatmap->points[z].past1 == UP)  ||
+        (dir == RIGHT && heatmap->points[z].past1 == LEFT) || (dir == LEFT  && heatmap->points[z].past1 == RIGHT)) {
         return false;
     }
     // if the current location is out-of-bounds, error
@@ -281,7 +293,7 @@ void count_height_width(const char* const filename, int *rows, int *cols) {
     *cols = 0;
 
     // count columns and first row
-    if (fscanf(infile, BUFFERSCANF, buffer)) {
+    if (fscanf(infile, BUFFERSCANF, buffer) > 0) {
         *cols = strnlen(buffer, BUFFERSIZE);
         *rows += 1;
     }
@@ -306,10 +318,8 @@ int fill_heatmap(HeatMap *const heatmap, const char* const filename) {
     int z = 0;
     while (z < total_vertices) {
         char c = fgetc(infile);
-        //printf("got character [%c]\n", c);
         if (c >= '0' && c <= '9') {
             heatmap->points[z].heat = c - '0';
-            //printf("loading heat=%d onto z=%d\n", c - '0', z);
             z++;
         }
         else {
